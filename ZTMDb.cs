@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using ZTMApp.Models;
 
 namespace ZTMApp;
 
