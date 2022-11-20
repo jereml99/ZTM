@@ -25,7 +25,7 @@ namespace ZTMApp.Migrations
                     b.Property<string>("BusStops")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Login")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Password")

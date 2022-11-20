@@ -15,7 +15,7 @@ app.MapPost("/login", async (User user, ZTMDb db) =>
 {
     try
     {
-        var userFromDb = await db.Users.FirstAsync(u => u.Name == user.Name && u.Password == user.Password);
+        var userFromDb = await db.Users.FirstAsync(u => u.Login == user.Login && u.Password == user.Password);
 
         if (userFromDb != null)
         {
@@ -52,7 +52,7 @@ app.MapPost("/adduser", async (User user, ZTMDb db) =>
     db.Users.Add(user);
     await db.SaveChangesAsync();
 
-    return Results.Created($"/adduser/{user.Name}", user);
+    return Results.Created($"/adduser/{user.Login}", user);
 });
 
 // from query
@@ -62,7 +62,7 @@ app.MapPost("/addbusstops", async (int userId, string busStops,  ZTMDb db) =>
     {
         var user = await db.Users.FirstAsync(u => u.Id == userId);
 
-        if (user.BusStops == null) user.BusStops = "";
+        user.BusStops ??= "";
 
         user.BusStops += " " + busStops;
         await db.SaveChangesAsync();

@@ -10,8 +10,8 @@ using ZTMApp;
 namespace ZTMApp.Migrations
 {
     [DbContext(typeof(ZTMDb))]
-    [Migration("20221120131004_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20221120201743_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -19,13 +19,16 @@ namespace ZTMApp.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.0");
 
-            modelBuilder.Entity("ZTMApp.User", b =>
+            modelBuilder.Entity("ZTMApp.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("BusStops")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Login")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Password")
