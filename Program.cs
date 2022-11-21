@@ -3,10 +3,15 @@ using ZTMApp;
 using ZTMApp.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddResponseCaching();
 var client = new HttpClient();
 builder.Services.AddDbContext<ZTMDb>(opt => opt.UseSqlite());
 
 var app = builder.Build();
+
+app.UseMiddleware<AddCacheHeadersMiddleware>();
+
+app.UseResponseCaching();
 
 app.MapGet("/listusers", async (ZTMDb db) =>
     await db.Users.ToListAsync());
@@ -19,7 +24,7 @@ app.MapPost("/login", async (User user, ZTMDb db) =>
 
         if (userFromDb != null)
         {
-            return Results.Ok("authorized");
+            return Results.Ok(userFromDb.Id);
         }
         else
         {
@@ -35,9 +40,8 @@ app.MapPost("/login", async (User user, ZTMDb db) =>
 app.MapGet("/stopInfo/{stopId}", (int stopId) =>
     fetchDataFromUri($"http://ckan2.multimediagdansk.pl/delays?stopId={stopId}"));
 
-
-app.MapGet("/busstops", () => 
-    fetchDataFromUri("https://ckan.multimediagdansk.pl/dataset/c24aa637-3619-4dc2-a171-a23eec8f2172/resource/4c4025f0-01bf-41f7-a39f-d156d201b82b/download/stops.json"));
+app.MapGet("/busstops", () =>
+    fetchDataFromUri("https://ckan.multimediagdansk.pl/dataset/c24aa637-3619-4dc2-a171-a23eec8f2172/resource/4c4025f0-01bf-41f7-a39f-d156d201b82b/download/stops.json")).CacheOutput();
 
 async Task<IResult> fetchDataFromUri(string uri)
 {

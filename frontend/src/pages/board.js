@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../styles/App.css';
 import StockSearchBar from '../components/StockSearchBar';
+import { useLocation } from 'react-router-dom';
 
 class Model {
 
@@ -42,14 +42,14 @@ function createJsonObjects(response) {
 }
 
 function convertToSelectOptions(data) {
-	let assets = data.assets_names;
+	let stops = Object.values(data)[0].stops; // take first
 	var arr = [];
 
-	if (data && assets.length > 0) {
-		for (let index = 0; index < assets.length; index++) {
-			if (assets[index].token !== undefined) {
-				arr.push({ label: assets[index].token, value: assets[index].token });
-			}
+	for (let index = 0; index < stops.length; index++) {
+		const stop = stops[index];
+
+		if (stop.stopName !== null && stop.stopId !== null) {
+			arr.push({ label: stop.stopName, value: stop.stopId });
 		}
 	}
 
@@ -62,19 +62,18 @@ const Board = () => {
 	const [radioChoice, setRadioChoice] = useState({ modelName: '', radioValue: false, radioId: -1 });
 	const [isRadioChosen, setIsRadioChosen] = useState(true);
 	const [models, setModels] = useState([]);
-    const navigate = useNavigate();
-    
-    const endpoint = "/train";
-	const [userChosenToken, setToken] = useState("");
+	const [busStopId, setBusStopId] = useState("");
 	const [isTokenValid, setTokenValid] = useState(true);
-	const [companyName, setTokenCompanyName] = useState("");
-	const [validDateRange, setValidDateRange] = useState({ startTime: new Date(), endTime: new Date() });
-	const [assets, setAssets] = useState(null);
-	const [assetsSelectList, setAssetsSelectList] = useState(null);
+	const [busStopName, setBusStopName] = useState("");
+	const [busStopsList, setAssetsSelectList] = useState(null);
+	const [userData, setUserData] = useState({ id: 0, login: "", password: "" });
+
+	let location = useLocation();
+	setUserData(location.userData);
 
 	useEffect(() => {
 		function fetchData() {
-			fetch("/assets")
+			fetch("/busstops")
 				.then(res => res.json())
 				.then(response => processResponse(response))
 				.catch(error => console.log(error));
@@ -84,35 +83,34 @@ const Board = () => {
 
 	function processResponse(response) {
 		setAssetsSelectList(convertToSelectOptions(response));
-		setAssets(response.assets_names);
 	}
 
 	const handleSelectStock = (userSelect) => {
-		setToken(userSelect.value);
+		setBusStopName(userSelect.label);
+		setBusStopId(userSelect.value);
 		setTokenValid(true);
-		setTokenCompanyName(userSelect.label);
-		console.log(validDateRange);
 	}
 
 	async function handleSubmit(event) {
 
 		event.preventDefault();
 
-		var nrOfLayers = event.target.nrOfLayers;
+		//var nrOfLayers = event.target.nrOfLayers;
 
 		if (true) {
+			await makeFetch();
 			alert("ok!");
 		}
 	}
-	useEffect(() => {
-		function fetchData() {
-			fetch("/models")
-				.then(res => res.json())
-				.then(response => setModels(createJsonObjects(response.model_names)))
-				.catch(error => console.log(error));
-		}
-		fetchData();
-	}, []);
+	// useEffect(() => {
+	// 	function fetchData() {
+	// 		fetch("/models")
+	// 			.then(res => res.json())
+	// 			.then(response => setModels(createJsonObjects(response.model_names)))
+	// 			.catch(error => console.log(error));
+	// 	}
+	// 	fetchData();
+	// }, []);
 
 	async function makeFetch() {
 
@@ -129,64 +127,64 @@ const Board = () => {
 		return response;
 	}
 
-	async function handleSubmit(event) {
+	// async function handleSubmit(event) {
 
-		event.preventDefault();
+	// 	event.preventDefault();
 
-		if (radioChoice.radioId !== -1) {
+	// 	if (radioChoice.radioId !== -1) {
 
-			//alert(`Submitting prediction request for model: ${event.target[radioChoice.radioId].value}`);
-			let response = await makeFetch();
+	// 		//alert(`Submitting prediction request for model: ${event.target[radioChoice.radioId].value}`);
+	// 		let response = await makeFetch();
 
-			setIsRadioChosen(true);
-			var chosenModel = new Model(radioChoice.modelName);
-			let state = {
-				modelPrediction: response.model_prediction,
-				token: chosenModel.token
-			};
-			navigate('/predictOutput', { state });
-		}
-		else {
-			setIsRadioChosen(false);
-		}
-	}
+	// 		setIsRadioChosen(true);
+	// 		var chosenModel = new Model(radioChoice.modelName);
+	// 		let state = {
+	// 			modelPrediction: response.model_prediction,
+	// 			token: chosenModel.token
+	// 		};
+	// 		navigate('/predictOutput', { state });
+	// 	}
+	// 	else {
+	// 		setIsRadioChosen(false);
+	// 	}
+	// }
 
 	return (
 		<>
-            <div>
-                
-                <form id='stock_form' onSubmit={handleSubmit}>
+			<div>
+				<div>{"Hello " + userData.login}</div>
+				<form id='stock_form' onSubmit={handleSubmit}>
 
-                    <StockSearchBar
-                        chosenCompanyName={companyName}
-                        onSelectStock={handleSelectStock}
-                        isTokenValid={isTokenValid}
-                        assetsSelectList={assetsSelectList}
-                    />
+					<StockSearchBar
+						chosenCompanyName={busStopName}
+						onSelectStock={handleSelectStock}
+						isTokenValid={isTokenValid}
+						busStopsList={busStopsList}
+					/>
 
-                    <div className='submit_input_div'><input type="submit" defaultValue="Add bus stop" /></div>
+					<div className='submit_input_div'><input type="submit" defaultValue="Add bus stop" value={"Add stop"} /></div>
 
-			    </form>
+				</form>
 
-                <div className='radio-options'>
-                    {models.map((item, i) => (
-                        <div key={i}>
-                            <input
-                                type="radio"
-                                name="modelRadio"
-                                value={item.modelName}
-                                checked={radioChoice.radioValue === item.modelName}
-                                onChange={(e) => setRadioChoice({
-                                    modelName: item.modelName,
-                                    radioValue: e.target.value,
-                                    radioId: i
-                                })}
-                                id={i}
-                            />
-                            <label htmlFor={i}>{"token: " + item.token + ", start time: " + item.startTime + ", end time: " + item.endTime + ", is twitter: " + item.isTwitter}</label>
-                        </div>
-                    ))}
-                </div>
+				<div className='radio-options'>
+					{models.map((item, i) => (
+						<div key={i}>
+							<input
+								type="radio"
+								name="modelRadio"
+								value={item.modelName}
+								checked={radioChoice.radioValue === item.modelName}
+								onChange={(e) => setRadioChoice({
+									modelName: item.modelName,
+									radioValue: e.target.value,
+									radioId: i
+								})}
+								id={i}
+							/>
+							<label htmlFor={i}>{"token: " + item.token + ", start time: " + item.startTime + ", end time: " + item.endTime + ", is twitter: " + item.isTwitter}</label>
+						</div>
+					))}
+				</div>
 			</div>
 		</>
 	);

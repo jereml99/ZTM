@@ -28,10 +28,10 @@ module.exports = function (app) {
         createProxyMiddleware(ztmBackendPOST)
     );
 
-    // app.use(
-    //     '/assets',
-    //     createProxyMiddleware(ztmBackendGET)
-    // );
+    app.use(
+        '/busstops',
+        createProxyMiddleware(ztmBackendGET)
+    );
 
     // app.use(
     //     '/models',

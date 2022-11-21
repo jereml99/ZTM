@@ -4,13 +4,12 @@ import Select from 'react-select'
 function filterOptions(assets, filterText) {
 
 	var filteredOptions = [{}];
+	var filterTextLowercase = filterText.toLowerCase();
 
 	for (let index = 0; index < assets.length; index++) {
 
 		const asset = assets[index];
-
 		var elementLowercase = asset.label.toLowerCase();
-		var filterTextLowercase = filterText.toLowerCase();
 
 		if (elementLowercase.indexOf(filterTextLowercase) !== -1) {
 			filteredOptions.push(asset);
@@ -35,9 +34,9 @@ export default class StockSearchBar extends Component {
 	}
 
 	componentDidUpdate() {
-		if (this.props.assetsSelectList !== undefined) {
-			if (this.props.assetsSelectList !== this.state.displayedData) {
-				this.setState({ displayedData: this.props.assetsSelectList });
+		if (this.props.busStopsList !== undefined) {
+			if (this.props.busStopsList !== this.state.displayedData) {
+				this.setState({ displayedData: this.props.busStopsList });
 			}
 		}
 	}
