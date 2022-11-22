@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/App.css';
 import StockSearchBar from '../components/StockSearchBar';
+import InfoArray from '../components/InfoArray';
 import { useLocation } from 'react-router-dom';
 
 class Model {
@@ -62,14 +63,12 @@ const Board = () => {
 	const [radioChoice, setRadioChoice] = useState({ modelName: '', radioValue: false, radioId: -1 });
 	const [isRadioChosen, setIsRadioChosen] = useState(true);
 	const [models, setModels] = useState([]);
-	const [busStopId, setBusStopId] = useState("");
+	const [busStopId, setBusStopId] = useState(0);
 	const [isTokenValid, setTokenValid] = useState(true);
 	const [busStopName, setBusStopName] = useState("");
-	const [busStopsList, setAssetsSelectList] = useState(null);
-	const [userData, setUserData] = useState({ id: 0, login: "", password: "" });
-
-	let location = useLocation();
-	setUserData(location.userData);
+	const [busStopList, setBusStopList] = useState(null);
+	const [userInfoArrays, setUserInfoArrays] = useState([]);
+	const userData = useLocation().state;
 
 	useEffect(() => {
 		function fetchData() {
@@ -81,36 +80,48 @@ const Board = () => {
 		fetchData();
 	}, []);
 
-	function processResponse(response) {
-		setAssetsSelectList(convertToSelectOptions(response));
-	}
+	useEffect(() => {
+		function fetchData() {
+			fetch(`/listuserbusstops/${userData.id}`)
+				.then(res => res.json())
+				.then(response => setUserInfoArrays(response))
+				.catch(error => console.log(error));
+		}
+		fetchData();
+	}, []);
 
+	function processResponse(response) {
+		setBusStopList(convertToSelectOptions(response));
+	}
 	const handleSelectStock = (userSelect) => {
 		setBusStopName(userSelect.label);
 		setBusStopId(userSelect.value);
 		setTokenValid(true);
 	}
 
-	async function handleSubmit(event) {
+	async function handleAddStop(event) {
 
 		event.preventDefault();
-
-		//var nrOfLayers = event.target.nrOfLayers;
-
+		let a = userInfoArrays;
 		if (true) {
-			await makeFetch();
-			alert("ok!");
+
+			const requestOptions = {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' }
+			};
+
+			await fetch(`/addbusstop?userId=${userData.id}&busStopId=${busStopId}`, requestOptions)
+				.then(response => console.log(response))
+				.catch(error => console.log(error));
+
+			// await fetch(`/stopinfo/${busStopId}`)
+			// 	.then(res => res.json())
+			// 	.then(response => processResponse(response))
+			// 	.catch(error => console.log(error));
+
+			//alert("ok!");
 		}
 	}
-	// useEffect(() => {
-	// 	function fetchData() {
-	// 		fetch("/models")
-	// 			.then(res => res.json())
-	// 			.then(response => setModels(createJsonObjects(response.model_names)))
-	// 			.catch(error => console.log(error));
-	// 	}
-	// 	fetchData();
-	// }, []);
 
 	async function makeFetch() {
 
@@ -127,46 +138,34 @@ const Board = () => {
 		return response;
 	}
 
-	// async function handleSubmit(event) {
-
-	// 	event.preventDefault();
-
-	// 	if (radioChoice.radioId !== -1) {
-
-	// 		//alert(`Submitting prediction request for model: ${event.target[radioChoice.radioId].value}`);
-	// 		let response = await makeFetch();
-
-	// 		setIsRadioChosen(true);
-	// 		var chosenModel = new Model(radioChoice.modelName);
-	// 		let state = {
-	// 			modelPrediction: response.model_prediction,
-	// 			token: chosenModel.token
-	// 		};
-	// 		navigate('/predictOutput', { state });
-	// 	}
-	// 	else {
-	// 		setIsRadioChosen(false);
-	// 	}
-	// }
-
 	return (
 		<>
 			<div>
 				<div>{"Hello " + userData.login}</div>
-				<form id='stock_form' onSubmit={handleSubmit}>
+				<form id='stock_form' onSubmit={handleAddStop}>
 
 					<StockSearchBar
 						chosenCompanyName={busStopName}
 						onSelectStock={handleSelectStock}
 						isTokenValid={isTokenValid}
-						busStopsList={busStopsList}
+						busStopList={busStopList}
 					/>
 
-					<div className='submit_input_div'><input type="submit" defaultValue="Add bus stop" value={"Add stop"} /></div>
+					<div className='submit_input_div'><input type="submit" value={"Add stop"} /></div>
 
 				</form>
 
 				<div className='radio-options'>
+					{userInfoArrays.map((array, i) => (
+						<div key={i}>
+							<InfoArray
+								array={array}
+							/>
+						</div>
+					))}
+				</div>
+
+				{/* <div className='radio-options'>
 					{models.map((item, i) => (
 						<div key={i}>
 							<input
@@ -184,7 +183,7 @@ const Board = () => {
 							<label htmlFor={i}>{"token: " + item.token + ", start time: " + item.startTime + ", end time: " + item.endTime + ", is twitter: " + item.isTwitter}</label>
 						</div>
 					))}
-				</div>
+				</div> */}
 			</div>
 		</>
 	);

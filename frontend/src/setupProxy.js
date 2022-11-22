@@ -24,17 +24,25 @@ module.exports = function (app) {
     );
 
     app.use(
-        '/adduser',
+        '/addbusstop',
         createProxyMiddleware(ztmBackendPOST)
     );
+
+
 
     app.use(
         '/busstops',
         createProxyMiddleware(ztmBackendGET)
     );
 
-    // app.use(
-    //     '/models',
-    //     createProxyMiddleware(ztmBackendGET)
-    // );
+    app.use(
+        '/stopinfo',
+        createProxyMiddleware(ztmBackendGET)
+    );
+
+    app.use(
+        '/listuserbusstops',
+        createProxyMiddleware(ztmBackendGET)
+    );
+
 };

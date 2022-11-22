@@ -34,9 +34,9 @@ export default class StockSearchBar extends Component {
 	}
 
 	componentDidUpdate() {
-		if (this.props.busStopsList !== undefined) {
-			if (this.props.busStopsList !== this.state.displayedData) {
-				this.setState({ displayedData: this.props.busStopsList });
+		if (this.props.busStopList !== undefined) {
+			if (this.props.busStopList !== this.state.displayedData) {
+				this.setState({ displayedData: this.props.busStopList });
 			}
 		}
 	}

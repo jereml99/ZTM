@@ -40,18 +40,21 @@ const LoginUser = () => {
             checkIfUserIsValid(userData).then(function (response) {
                 if (!response.ok) {
                     // make the promise be rejected if we didn't get a 2xx response
+                    throw new Error("Whoops!");
+                } else {
+                    return response.json();
+                }
+            })
+                .then(function (data) {
+                    userData.id = data.id;
+                    let state = userData;
+                    navigate('/board', { state });
+                })
+                .catch(function (err) {
+                    alert('There was an error:' + err);
                     window.location.reload(false);
                     return false;
-                } else {
-                    alert(`ok`);
-                    userData.id = response;
-                    navigate('/board', { userData });
-                }
-            }).catch(function (err) {
-                alert('There was an error:' + err);
-                window.location.reload(false);
-                return false;
-            });
+                });
         }
     }
 
