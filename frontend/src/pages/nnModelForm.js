@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import StockSearchBar from '../components/StockSearchBar';
+import StockSearchBar from '../components/BusStopSearchBar';
 import '../styles/App.css';
 
 function convertToSelectOptions(data) {

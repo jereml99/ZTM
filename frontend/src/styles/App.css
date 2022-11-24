@@ -168,3 +168,20 @@ input {
 .choose_form_button:hover {
 	background-color: gainsboro;
 }
+
+.radioInput {
+    display : block;
+    width: 400px;
+}
+.radioInput > input{ /* HIDE RADIO */
+    visibility: hidden; /* Makes input not-clickable */
+    position: absolute; /* Remove input from document flow */
+}
+.radioInput > input + InfoArray{ /* DIV STYLES */
+    cursor:pointer;
+    border:2px solid transparent;
+}
+.radioInput > input:checked + div{ /* (RADIO CHECKED) DIV STYLES */
+    background-color: #ffd6bb;
+    border: 1px solid #ff6600;
+}

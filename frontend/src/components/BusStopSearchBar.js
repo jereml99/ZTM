@@ -19,7 +19,7 @@ function filterOptions(assets, filterText) {
 	return filteredOptions;
 }
 
-export default class StockSearchBar extends Component {
+export default class BusStopSearchBar extends Component {
 
 	constructor(props) {
 		super(props);

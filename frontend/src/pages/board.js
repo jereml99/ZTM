@@ -1,46 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/App.css';
-import StockSearchBar from '../components/StockSearchBar';
+import BusStopSearchBar from '../components/BusStopSearchBar';
 import InfoArray from '../components/InfoArray';
 import { useLocation } from 'react-router-dom';
 
-class Model {
+// class Model {
 
-	constructor(modelName) {
+// 	constructor(modelName) {
 
-		var array = modelName.split('_');
-		var params = adjustArray(array);
+// 		var array = modelName.split('_');
+// 		var params = adjustArray(array);
 
-		this.token = params[0];
-		this.startTime = params[1];
-		this.endTime = params[2];
-		this.nrOfLayers = params[3];
-		this.learningRate = params[4];
-		this.nrOfHiddenDimensions = params[5];
-		this.lookBack = params[6];
-		this.batchSize = params[7];
-		this.isTwitter = params[8];
-		this.modelName = modelName;
-	}
-}
+// 		this.token = params[0];
+// 		this.startTime = params[1];
+// 		this.endTime = params[2];
+// 		this.nrOfLayers = params[3];
+// 		this.learningRate = params[4];
+// 		this.nrOfHiddenDimensions = params[5];
+// 		this.lookBack = params[6];
+// 		this.batchSize = params[7];
+// 		this.isTwitter = params[8];
+// 		this.modelName = modelName;
+// 	}
+// }
 
-function adjustArray(array) {
-	array[8] = array[8].toLowerCase();
+// function adjustArray(array) {
+// 	array[8] = array[8].toLowerCase();
 
-	return array;
-}
+// 	return array;
+// }
 
-function createJsonObjects(response) {
+// function createJsonObjects(response) {
 
-	var models = [];
+// 	var models = [];
 
-	response.forEach(element => {
-		var model = new Model(element);
-		models.push(model);
-	});
+// 	response.forEach(element => {
+// 		var model = new Model(element);
+// 		models.push(model);
+// 	});
 
-	return models;
-}
+// 	return models;
+// }
 
 function convertToSelectOptions(data) {
 	let stops = Object.values(data)[0].stops; // take first
@@ -60,9 +60,9 @@ function convertToSelectOptions(data) {
 
 const Board = () => {
 
-	const [radioChoice, setRadioChoice] = useState({ modelName: '', radioValue: false, radioId: -1 });
+	const [radioChoice, setRadioChoice] = useState({ arrayIndex: -1, radioValue: false });
 	const [isRadioChosen, setIsRadioChosen] = useState(true);
-	const [models, setModels] = useState([]);
+	//const [models, setModels] = useState([]);
 	const [busStopId, setBusStopId] = useState(0);
 	const [isTokenValid, setTokenValid] = useState(true);
 	const [busStopName, setBusStopName] = useState("");
@@ -144,7 +144,7 @@ const Board = () => {
 				<div>{"Hello " + userData.login}</div>
 				<form id='stock_form' onSubmit={handleAddStop}>
 
-					<StockSearchBar
+					<BusStopSearchBar
 						chosenCompanyName={busStopName}
 						onSelectStock={handleSelectStock}
 						isTokenValid={isTokenValid}
@@ -158,9 +158,25 @@ const Board = () => {
 				<div className='radio-options'>
 					{userInfoArrays.map((array, i) => (
 						<div key={i}>
-							<InfoArray
-								array={array}
-							/>
+							<label className="radioInput">
+								<input
+									type="radio"
+									name="tableRadio"
+									value="one_value"
+									checked={radioChoice.radioValue === array.modelName}
+									onChange={(e) => setRadioChoice({
+										arrayIndex: i,
+										radioValue: e.target.value
+									})}
+									id={i}
+								/>
+								<div>
+									aaa
+									{/* <InfoArray
+										array={array}
+									/> */}
+								</div>
+							</label>
 						</div>
 					))}
 				</div>

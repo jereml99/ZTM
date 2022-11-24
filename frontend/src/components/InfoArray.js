@@ -10,6 +10,7 @@ export default class InfoArray extends Component {
     render() {
         return (
             <>
+                <div>tab</div>
                 {this.props.array.map((el, j) => (
                     <ul>
                         <li>{el.id}</li>
