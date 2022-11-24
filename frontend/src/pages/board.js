@@ -99,10 +99,15 @@ const Board = () => {
 		setTokenValid(true);
 	}
 
+	const onRadioChosen = (event) => {
+		setRadioChoice({ radioValue: event.target.value });
+
+	}
+
 	async function handleAddStop(event) {
 
 		event.preventDefault();
-		let a = userInfoArrays;
+
 		if (true) {
 
 			const requestOptions = {
@@ -163,11 +168,8 @@ const Board = () => {
 									type="radio"
 									name="tableRadio"
 									value="one_value"
-									checked={radioChoice.radioValue === array.modelName}
-									onChange={(e) => setRadioChoice({
-										arrayIndex: i,
-										radioValue: e.target.value
-									})}
+									checked={radioChoice.radioValue === i}
+									onChange={onRadioChosen}
 									id={i}
 								/>
 								<div>
