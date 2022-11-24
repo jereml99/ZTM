@@ -60,7 +60,7 @@ const LoginUser = () => {
 
     return (
         <>
-            <form id='stock_form' onSubmit={handleSubmit}>
+            <form id='my_form' onSubmit={handleSubmit}>
                 <div className='div_for_my_label'><label className='my_label'>Login</label> </div>
                 <input name="queryText" type="text" onChange={onLoginChange}></input>
 

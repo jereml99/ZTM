@@ -1,9 +1,9 @@
 import React from 'react';
-import './styles/App.css';
 import { BrowserRouter as Router, Routes, Route }
     from 'react-router-dom';
-import LoginUser from './pages';
+import LoginUser from './pages/index.js';
 import Board from './pages/board';
+import './styles/App.css';
 
 function App() {
 

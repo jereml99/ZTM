@@ -66,7 +66,7 @@ const Board = () => {
 	const [busStopId, setBusStopId] = useState(0);
 	const [isTokenValid, setTokenValid] = useState(true);
 	const [busStopName, setBusStopName] = useState("");
-	const [busStopList, setBusStopList] = useState(null);
+	const [busStopList, setBusStopList] = useState([]);
 	const [userInfoArrays, setUserInfoArrays] = useState([]);
 	const userData = useLocation().state;
 
@@ -84,11 +84,22 @@ const Board = () => {
 		function fetchData() {
 			fetch(`/listuserbusstops/${userData.id}`)
 				.then(res => res.json())
-				.then(response => setUserInfoArrays(response))
+				.then(response => processUserInfoArray(response))
 				.catch(error => console.log(error));
 		}
 		fetchData();
 	}, []);
+
+	function processUserInfoArray(response) {
+		let processedArray = [];
+		for (let index = 0; index < response.length; index++) {
+			if (response[index].length > 0) {
+				processedArray.push(response[index]);
+			}
+		}
+
+		setUserInfoArrays(processedArray);
+	}
 
 	function processResponse(response) {
 		setBusStopList(convertToSelectOptions(response));
@@ -99,15 +110,15 @@ const Board = () => {
 		setTokenValid(true);
 	}
 
-	const onRadioChosen = (event) => {
-		setRadioChoice({ radioValue: event.target.value });
+	const onRadioChoose = (event, id) => {
+		setRadioChoice({ arrayIndex: id, radioValue: event.target.value });
 
 	}
 
 	async function handleAddStop(event) {
 
 		event.preventDefault();
-
+		let a = userInfoArrays;
 		if (true) {
 
 			const requestOptions = {
@@ -147,7 +158,7 @@ const Board = () => {
 		<>
 			<div>
 				<div>{"Hello " + userData.login}</div>
-				<form id='stock_form' onSubmit={handleAddStop}>
+				<form id='my_form' onSubmit={handleAddStop}>
 
 					<BusStopSearchBar
 						chosenCompanyName={busStopName}
@@ -167,41 +178,20 @@ const Board = () => {
 								<input
 									type="radio"
 									name="tableRadio"
-									value="one_value"
-									checked={radioChoice.radioValue === i}
-									onChange={onRadioChosen}
+									// value="one_value"
+									checked={radioChoice.arrayIndex === i}
+									onChange={event => onRadioChoose(event, i)}
 									id={i}
 								/>
 								<div>
-									aaa
-									{/* <InfoArray
+									<InfoArray
 										array={array}
-									/> */}
+									/>
 								</div>
 							</label>
 						</div>
 					))}
 				</div>
-
-				{/* <div className='radio-options'>
-					{models.map((item, i) => (
-						<div key={i}>
-							<input
-								type="radio"
-								name="modelRadio"
-								value={item.modelName}
-								checked={radioChoice.radioValue === item.modelName}
-								onChange={(e) => setRadioChoice({
-									modelName: item.modelName,
-									radioValue: e.target.value,
-									radioId: i
-								})}
-								id={i}
-							/>
-							<label htmlFor={i}>{"token: " + item.token + ", start time: " + item.startTime + ", end time: " + item.endTime + ", is twitter: " + item.isTwitter}</label>
-						</div>
-					))}
-				</div> */}
 			</div>
 		</>
 	);

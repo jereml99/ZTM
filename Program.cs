@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using System.Text.Json;
 using ZTMApp;
 using ZTMApp.Models;
 
@@ -9,6 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddResponseCaching();
 var client = new HttpClient();
 builder.Services.AddDbContext<ZTMDb>(opt => opt.UseSqlite());
+
+builder.Services.AddOutputCache(options =>
+{
+    options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
+    options.AddPolicy("Expire120", builder => builder.Expire(TimeSpan.FromSeconds(120)));
+});
 
 var app = builder.Build();
 
@@ -24,22 +28,28 @@ app.MapGet("/listuserbusstops/{userId}", async (int userId, ZTMDb db) =>
     var user = await db.Users.FirstAsync(u => u.Id == userId);
     var busStopsId = user.BusStops?.Split(' ').Select(int.Parse);
 
-    var infoArrays = new List<List<Delay>>();
+    var arrayWraps = new List<ArrayWrap>(); 
 
     foreach (var stopId in busStopsId ?? new List<int>())
     {
         var jsonResponse = await fetchDataFromUri($"http://ckan2.multimediagdansk.pl/delays?stopId={stopId}");
         var infoArray = JsonConvert.DeserializeObject<RootDelayArray>(jsonResponse ?? "")?.delay;
 
-        if(infoArray != null)
+        var arrayWrap = new ArrayWrap()
         {
-           infoArrays.Add(infoArray);
+            Delays = infoArray!,
+            StopId = stopId,
+            StopName = ""
+        };
+
+        if (infoArray != null)
+        {
+            arrayWraps.Add(arrayWrap);
         }
     }
 
-    return System.Text.Json.JsonSerializer.Serialize(infoArrays);
+    return System.Text.Json.JsonSerializer.Serialize(arrayWraps);
 });
-
 
 app.MapPost("/login", async (User user, ZTMDb db) =>
 {
@@ -67,15 +77,7 @@ app.MapGet("/stopinfo/{stopId}", async (int stopId) =>
     Results.Content(await fetchDataFromUri($"http://ckan2.multimediagdansk.pl/delays?stopId={stopId}")));
 
 app.MapGet("/busstops", () =>
-    fetchDataFromUri("https://ckan.multimediagdansk.pl/dataset/c24aa637-3619-4dc2-a171-a23eec8f2172/resource/4c4025f0-01bf-41f7-a39f-d156d201b82b/download/stops.json")).CacheOutput();
-
-async Task<string?> fetchDataFromUri(string uri)
-{
-    var requestContent = (await client.GetAsync(uri)).Content;
-    var jsonContent = await requestContent.ReadAsStringAsync();
-
-    return jsonContent;
-}
+    fetchDataFromUri("https://ckan.multimediagdansk.pl/dataset/c24aa637-3619-4dc2-a171-a23eec8f2172/resource/4c4025f0-01bf-41f7-a39f-d156d201b82b/download/stops.json")).CacheOutput("Expire120");
 
 app.MapPost("/adduser", async (User user, ZTMDb db) =>
 {
@@ -102,6 +104,14 @@ app.MapPost("/addbusstop", async (int userId, int busStopId,  ZTMDb db) =>
         return Results.BadRequest();
     }
 });
+
+async Task<string?> fetchDataFromUri(string uri)
+{
+    var requestContent = (await client.GetAsync(uri)).Content;
+    var jsonContent = await requestContent.ReadAsStringAsync();
+
+    return jsonContent;
+}
 
 async void addBusStop(User user, int busStopId, ZTMDb db)
 {
