@@ -1,46 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/App.css';
+import { useLocation } from 'react-router-dom';
 import BusStopSearchBar from '../components/BusStopSearchBar';
 import InfoArray from '../components/InfoArray';
-import { useLocation } from 'react-router-dom';
-
-// class Model {
-
-// 	constructor(modelName) {
-
-// 		var array = modelName.split('_');
-// 		var params = adjustArray(array);
-
-// 		this.token = params[0];
-// 		this.startTime = params[1];
-// 		this.endTime = params[2];
-// 		this.nrOfLayers = params[3];
-// 		this.learningRate = params[4];
-// 		this.nrOfHiddenDimensions = params[5];
-// 		this.lookBack = params[6];
-// 		this.batchSize = params[7];
-// 		this.isTwitter = params[8];
-// 		this.modelName = modelName;
-// 	}
-// }
-
-// function adjustArray(array) {
-// 	array[8] = array[8].toLowerCase();
-
-// 	return array;
-// }
-
-// function createJsonObjects(response) {
-
-// 	var models = [];
-
-// 	response.forEach(element => {
-// 		var model = new Model(element);
-// 		models.push(model);
-// 	});
-
-// 	return models;
-// }
+import '../styles/App.css';
 
 function convertToSelectOptions(data) {
 	let stops = Object.values(data)[0].stops; // take first
@@ -50,7 +12,8 @@ function convertToSelectOptions(data) {
 		const stop = stops[index];
 
 		if (stop.stopName !== null && stop.stopId !== null) {
-			arr.push({ label: stop.stopName, value: stop.stopId });
+			let customLabel = `${stop.stopName} (id: ${stop.stopId})`;
+			arr.push({ label: customLabel, value: stop.stopId });
 		}
 	}
 
@@ -60,11 +23,10 @@ function convertToSelectOptions(data) {
 
 const Board = () => {
 
-	const [radioChoice, setRadioChoice] = useState({ arrayIndex: -1, radioValue: false });
+	const [radioChoice, setRadioChoice] = useState({ busStopId: '', arrayIndex: -1, radioValue: false });
 	const [isRadioChosen, setIsRadioChosen] = useState(true);
-	//const [models, setModels] = useState([]);
-	const [busStopId, setBusStopId] = useState(0);
-	const [isTokenValid, setTokenValid] = useState(true);
+	const [isBusStopChosen, setIsBusStopChosen] = useState(true);
+	const [busStopId, setBusStopId] = useState(-1);
 	const [busStopName, setBusStopName] = useState("");
 	const [busStopList, setBusStopList] = useState([]);
 	const [userInfoArrays, setUserInfoArrays] = useState([]);
@@ -93,7 +55,7 @@ const Board = () => {
 	function processUserInfoArray(response) {
 		let processedArray = [];
 		for (let index = 0; index < response.length; index++) {
-			if (response[index].length > 0) {
+			if (response[index].Delays.length > 0) {
 				processedArray.push(response[index]);
 			}
 		}
@@ -104,22 +66,22 @@ const Board = () => {
 	function processResponse(response) {
 		setBusStopList(convertToSelectOptions(response));
 	}
-	const handleSelectStock = (userSelect) => {
+	const handleSelectBusStop = (userSelect) => {
 		setBusStopName(userSelect.label);
 		setBusStopId(userSelect.value);
-		setTokenValid(true);
+		setIsBusStopChosen(true);
 	}
 
-	const onRadioChoose = (event, id) => {
-		setRadioChoice({ arrayIndex: id, radioValue: event.target.value });
-
+	const onRadioChoose = (event, id, stopId) => {
+		setRadioChoice({ busStopId: stopId, arrayIndex: id, radioValue: event.target.value });
+		setIsRadioChosen(true);
 	}
 
 	async function handleAddStop(event) {
 
 		event.preventDefault();
-		let a = userInfoArrays;
-		if (true) {
+
+		if (busStopId > -1) {
 
 			const requestOptions = {
 				method: 'POST',
@@ -127,31 +89,24 @@ const Board = () => {
 			};
 
 			await fetch(`/addbusstop?userId=${userData.id}&busStopId=${busStopId}`, requestOptions)
-				.then(response => console.log(response))
+				.then(_ => window.location.reload(false))
 				.catch(error => console.log(error));
-
-			// await fetch(`/stopinfo/${busStopId}`)
-			// 	.then(res => res.json())
-			// 	.then(response => processResponse(response))
-			// 	.catch(error => console.log(error));
-
-			//alert("ok!");
 		}
 	}
 
-	async function makeFetch() {
+	async function handleDeleteStop() {
 
-		const requestOptions = {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ model_name: radioChoice.modelName })
-		};
+		if (isRadioChosen) {
 
-		let response = await fetch('/predict', requestOptions)
-			.then(response => response.json())
-			.catch(err => alert('There was an error:' + err));
+			const requestOptions = {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' }
+			};
 
-		return response;
+			await fetch(`/deletebusstop?userId=${userData.id}&busStopId=${radioChoice.busStopId}`, requestOptions)
+				.then(_ => window.location.reload(false))
+				.catch(error => console.log(error));
+		}
 	}
 
 	return (
@@ -161,9 +116,9 @@ const Board = () => {
 				<form id='my_form' onSubmit={handleAddStop}>
 
 					<BusStopSearchBar
-						chosenCompanyName={busStopName}
-						onSelectStock={handleSelectStock}
-						isTokenValid={isTokenValid}
+						busStopName={busStopName}
+						onSelectBusStop={handleSelectBusStop}
+						isBusStopChosen={isBusStopChosen}
 						busStopList={busStopList}
 					/>
 
@@ -180,18 +135,21 @@ const Board = () => {
 									name="tableRadio"
 									// value="one_value"
 									checked={radioChoice.arrayIndex === i}
-									onChange={event => onRadioChoose(event, i)}
+									onChange={event => onRadioChoose(event, i, array.StopId)}
 									id={i}
 								/>
 								<div>
+									<h4>{`stop id: ${array.StopId}`}</h4>
 									<InfoArray
-										array={array}
+										array={array.Delays}
 									/>
 								</div>
 							</label>
 						</div>
 					))}
 				</div>
+
+				<button onClick={handleDeleteStop}>Delete stop</button>
 			</div>
 		</>
 	);

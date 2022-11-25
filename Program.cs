@@ -12,6 +12,7 @@ builder.Services.AddOutputCache(options =>
 {
     options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
     options.AddPolicy("Expire120", builder => builder.Expire(TimeSpan.FromSeconds(120)));
+    // https://stackoverflow.com/questions/33402051/asp-net-mvc-5-jsonresult-caching
 });
 
 var app = builder.Build();
@@ -26,7 +27,7 @@ app.MapGet("/listusers", async (ZTMDb db) =>
 app.MapGet("/listuserbusstops/{userId}", async (int userId, ZTMDb db) =>
 {
     var user = await db.Users.FirstAsync(u => u.Id == userId);
-    var busStopsId = user.BusStops?.Split(' ').Select(int.Parse);
+    var busStopsId = getBusStops(user);
 
     var arrayWraps = new List<ArrayWrap>(); 
 
@@ -38,8 +39,7 @@ app.MapGet("/listuserbusstops/{userId}", async (int userId, ZTMDb db) =>
         var arrayWrap = new ArrayWrap()
         {
             Delays = infoArray!,
-            StopId = stopId,
-            StopName = ""
+            StopId = stopId
         };
 
         if (infoArray != null)
@@ -117,10 +117,60 @@ async void addBusStop(User user, int busStopId, ZTMDb db)
 {
     user.BusStops ??= "";
 
-    var busStops = user.BusStops.Split(' ').Select(int.Parse);  // extract to method
+    var busStops = getBusStops(user);
+
     if (!busStops.Contains(busStopId))
     {
-        user.BusStops += " " + busStopId;
+        if(busStops.Count > 0)
+        {
+            user.BusStops += " ";
+        }
+        user.BusStops += busStopId;
+        await db.SaveChangesAsync();
+    }
+}
+
+app.MapDelete("/deletebusstop", async (int userId, int busStopId, ZTMDb db) =>
+{
+    try
+    {
+        var user = await db.Users.FirstAsync(u => u.Id == userId);
+
+        deleteBusStop(user, busStopId, db);
+
+        return Results.Ok();
+    }
+    catch (Exception)
+    {
+        // or internalServerError
+        return Results.BadRequest();
+    }
+});
+
+async void deleteBusStop(User user, int busStopId, ZTMDb db)
+{
+    user.BusStops ??= "";
+
+    List<int> busStops = new();
+
+    busStops = getBusStops(user);
+
+    if (busStops.Contains(busStopId))
+    {
+        busStops = busStops.Where(u => u != busStopId).ToList();
+
+        var busStopsString = "";
+        foreach (var busStop in busStops)
+        {
+            busStopsString += busStop.ToString() + " ";
+        }
+
+        if(busStopsString.Length > 0)
+        {
+            busStopsString = busStopsString.Remove(busStopsString.Length - 1);
+        }
+
+        user.BusStops = busStopsString;
         await db.SaveChangesAsync();
     }
 }
@@ -140,3 +190,21 @@ app.MapDelete("/users/{id}", async (int id, ZTMDb db) =>
 app.MapGet("/", () => "Hello World!");
 
 app.Run();
+
+static List<int> getBusStops(User user)
+{
+    List<int> busStops = new();
+
+    if (user.BusStops == null || user.BusStops.Length == 0) return busStops;
+
+    if (user.BusStops.Contains(' '))
+    {
+        busStops = user.BusStops.Split(' ').Select(int.Parse).ToList();  // extract to method
+    }
+    else
+    {
+        busStops.Add(int.Parse(user.BusStops));
+    }
+
+    return busStops;
+}

@@ -42,19 +42,19 @@ export default class BusStopSearchBar extends Component {
 	}
 
 	handleSelectStock(userSelect) {
-		this.props.onSelectStock(userSelect);
+		this.props.onSelectBusStop(userSelect);
 	}
 
 	handleInputChange(filterText) {
 
-		this.setState({ filterText: filterText })// filterText = 'i'
+		this.setState({ filterText: filterText })
 
 		if (filterText.length > 0) {
 			let filterData = filterOptions(this.state.displayedData, filterText);
 			this.setState({ displayedData: filterData });
 		}
 		else {
-			this.setState({ displayedData: this.props.assetsSelectList });
+			this.setState({ displayedData: this.props.busStopList });
 		}
 	}
 
@@ -62,18 +62,18 @@ export default class BusStopSearchBar extends Component {
 		return (
 			<>
 				<div>
-					<div className='div_for_my_label'><label className='my_label'>Choose asset</label></div>
+					<div className='div_for_my_label'><label className='my_label'>Choose bus stop</label></div>
 
 					<Select
 						className='select_component'
-						value={{ value: this.props.chosenCompanyName, label: this.props.chosenCompanyName }}
+						value={{ value: this.props.busStopName, label: this.props.busStopName }}
 						options={this.state.displayedData}
 						onChange={this.handleSelectStock}
 						onInputChange={this.handleInputChange}
 						placeholder={'Search...'}
 					/>
 
-					{(!this.props.isTokenValid) ? <span style={{ color: "red" }}><div>Choose asset!</div></span> : <></>}
+					{(!this.props.isBusStopChosen) ? <span style={{ color: "red" }}><div>Choose bus stop!</div></span> : <></>}
 				</div>
 			</>
 		)

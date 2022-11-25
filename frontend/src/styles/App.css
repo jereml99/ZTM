@@ -113,7 +113,7 @@ input[type=submit] {
 	-webkit-border-radius: 5px;
 	border-radius: 5px;
 	cursor: pointer;
-	width: 100px;
+	width: 120px;
 	height: 40px;
 	font-size: large;
 	font-weight: 700;
@@ -140,6 +140,19 @@ input {
 	box-sizing: border-box;
 	font-size: medium;
 	padding-left: 5px;
+}
+
+button {
+	padding: 5px;
+	border: 2px solid #ccc;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	cursor: pointer;
+	width: 120px;
+	height: 40px;
+	font-size: large;
+	font-weight: 700;
+	color: darkgreen;
 }
 
 .choose_form_div {
@@ -194,4 +207,10 @@ input {
 .radioInput>input:checked+div {
 	border: 5px solid orange;
 	transition: background-color .5s;
+}
+
+table,
+th,
+td {
+	border: 1px solid black;
 }

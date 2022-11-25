@@ -16,6 +16,15 @@ const ztmBackendGET = {
     },
 }
 
+const ztmBackendDEL = {
+    target: ZTM_URL,
+    changeOrigin: true,
+    headers: {
+        accept: "application/json",
+        method: "DELETE",
+    },
+}
+
 module.exports = function (app) {
 
     app.use(
@@ -28,6 +37,11 @@ module.exports = function (app) {
         createProxyMiddleware(ztmBackendPOST)
     );
 
+
+    app.use(
+        '/deletebusstop',
+        createProxyMiddleware(ztmBackendDEL)
+    );
 
 
     app.use(
