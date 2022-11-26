@@ -1,55 +1,37 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using ZTMApp;
 using ZTMApp.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddResponseCaching();
 var client = new HttpClient();
 builder.Services.AddDbContext<ZTMDb>(opt => opt.UseSqlite());
-
-builder.Services.AddOutputCache(options =>
-{
-    options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(10)));
-    options.AddPolicy("Expire120", builder => builder.Expire(TimeSpan.FromSeconds(120)));
-    // https://stackoverflow.com/questions/33402051/asp-net-mvc-5-jsonresult-caching
-});
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
+var memoryCache = app.Services.GetService<IMemoryCache>();
 
-app.UseMiddleware<AddCacheHeadersMiddleware>();
-
-app.UseResponseCaching();
-
-app.MapGet("/listusers", async (ZTMDb db) =>
-    await db.Users.ToListAsync());
-
-app.MapGet("/listuserbusstops/{userId}", async (int userId, ZTMDb db) =>
+app.MapPost("/adduser", async (User user, ZTMDb db) =>
 {
-    var user = await db.Users.FirstAsync(u => u.Id == userId);
-    var busStopsId = getBusStops(user);
+    db.Users.Add(user);
+    await db.SaveChangesAsync();
 
-    var arrayWraps = new List<ArrayWrap>(); 
+    return Results.Created($"/adduser/{user.Login}", user);
+});
 
-    foreach (var stopId in busStopsId ?? new List<int>())
+app.MapDelete("/users/{id}", async (int id, ZTMDb db) =>
+{
+    if (await db.Users.FindAsync(id) is User user)
     {
-        var jsonResponse = await fetchDataFromUri($"http://ckan2.multimediagdansk.pl/delays?stopId={stopId}");
-        var infoArray = JsonConvert.DeserializeObject<RootDelayArray>(jsonResponse ?? "")?.delay;
-
-        var arrayWrap = new ArrayWrap()
-        {
-            Delays = infoArray!,
-            StopId = stopId
-        };
-
-        if (infoArray != null)
-        {
-            arrayWraps.Add(arrayWrap);
-        }
+        db.Users.Remove(user);
+        await db.SaveChangesAsync();
+        return Results.Ok(user);
     }
 
-    return System.Text.Json.JsonSerializer.Serialize(arrayWraps);
+    return Results.NotFound();
 });
+
 
 app.MapPost("/login", async (User user, ZTMDb db) =>
 {
@@ -73,19 +55,47 @@ app.MapPost("/login", async (User user, ZTMDb db) =>
     }
 });
 
-app.MapGet("/stopinfo/{stopId}", async (int stopId) =>
+
+app.MapGet("/listusers", async (ZTMDb db) =>
+    await db.Users.ToListAsync());
+
+app.MapGet("/listuserbusstops/{userId}", async (int userId, ZTMDb db) =>
+{
+    var user = await db.Users.FirstAsync(u => u.Id == userId);
+    var busStopsId = Repository.getBusStops(user);
+
+    var arrayWraps = new List<ArrayWrap>(); 
+
+    foreach (var stopId in busStopsId ?? new List<int>())
+    {
+        var jsonResponse = await fetchDataFromUri($"http://ckan2.multimediagdansk.pl/delays?stopId={stopId}");
+        var infoArray = JsonConvert.DeserializeObject<RootDelayArray>(jsonResponse ?? "")?.delay;
+
+        var arrayWrap = new ArrayWrap()
+        {
+            Delays = infoArray!,
+            StopId = stopId
+        };
+
+        if (infoArray != null)
+        {
+            arrayWraps.Add(arrayWrap);
+        }
+    }
+
+    return System.Text.Json.JsonSerializer.Serialize(arrayWraps);
+});
+
+app.MapGet("/stopinfo/{stopId}", async (int stopId) => 
     Results.Content(await fetchDataFromUri($"http://ckan2.multimediagdansk.pl/delays?stopId={stopId}")));
 
-app.MapGet("/busstops", () =>
-    fetchDataFromUri("https://ckan.multimediagdansk.pl/dataset/c24aa637-3619-4dc2-a171-a23eec8f2172/resource/4c4025f0-01bf-41f7-a39f-d156d201b82b/download/stops.json")).CacheOutput("Expire120");
+app.MapGet("/busstops", async () =>
 
-app.MapPost("/adduser", async (User user, ZTMDb db) =>
-{
-    db.Users.Add(user);
-    await db.SaveChangesAsync();
-
-    return Results.Created($"/adduser/{user.Login}", user);
-});
+    await memoryCache!.GetOrCreateAsync("stopinfo", async entry =>
+    {
+        return await fetchDataFromUri("https://ckan.multimediagdansk.pl/dataset/c24aa637-3619-4dc2-a171-a23eec8f2172/resource/4c4025f0-01bf-41f7-a39f-d156d201b82b/download/stops.json");
+    })
+);
 
 // from query
 app.MapPost("/addbusstop", async (int userId, int busStopId,  ZTMDb db) =>
@@ -94,7 +104,7 @@ app.MapPost("/addbusstop", async (int userId, int busStopId,  ZTMDb db) =>
     {
         var user = await db.Users.FirstAsync(u => u.Id == userId);
 
-        addBusStop(user, busStopId, db);
+        Repository.addBusStop(user, busStopId, db);
 
         return Results.Ok();
     }
@@ -113,30 +123,13 @@ async Task<string?> fetchDataFromUri(string uri)
     return jsonContent;
 }
 
-async void addBusStop(User user, int busStopId, ZTMDb db)
-{
-    user.BusStops ??= "";
-
-    var busStops = getBusStops(user);
-
-    if (!busStops.Contains(busStopId))
-    {
-        if(busStops.Count > 0)
-        {
-            user.BusStops += " ";
-        }
-        user.BusStops += busStopId;
-        await db.SaveChangesAsync();
-    }
-}
-
 app.MapDelete("/deletebusstop", async (int userId, int busStopId, ZTMDb db) =>
 {
     try
     {
         var user = await db.Users.FirstAsync(u => u.Id == userId);
 
-        deleteBusStop(user, busStopId, db);
+        Repository.deleteBusStop(user, busStopId, db);
 
         return Results.Ok();
     }
@@ -147,64 +140,6 @@ app.MapDelete("/deletebusstop", async (int userId, int busStopId, ZTMDb db) =>
     }
 });
 
-async void deleteBusStop(User user, int busStopId, ZTMDb db)
-{
-    user.BusStops ??= "";
-
-    List<int> busStops = new();
-
-    busStops = getBusStops(user);
-
-    if (busStops.Contains(busStopId))
-    {
-        busStops = busStops.Where(u => u != busStopId).ToList();
-
-        var busStopsString = "";
-        foreach (var busStop in busStops)
-        {
-            busStopsString += busStop.ToString() + " ";
-        }
-
-        if(busStopsString.Length > 0)
-        {
-            busStopsString = busStopsString.Remove(busStopsString.Length - 1);
-        }
-
-        user.BusStops = busStopsString;
-        await db.SaveChangesAsync();
-    }
-}
-
-app.MapDelete("/users/{id}", async (int id, ZTMDb db) =>
-{
-    if (await db.Users.FindAsync(id) is User user)
-    {
-        db.Users.Remove(user);
-        await db.SaveChangesAsync();
-        return Results.Ok(user);
-    }
-
-    return Results.NotFound();
-});
-
 app.MapGet("/", () => "Hello World!");
 
 app.Run();
-
-static List<int> getBusStops(User user)
-{
-    List<int> busStops = new();
-
-    if (user.BusStops == null || user.BusStops.Length == 0) return busStops;
-
-    if (user.BusStops.Contains(' '))
-    {
-        busStops = user.BusStops.Split(' ').Select(int.Parse).ToList();  // extract to method
-    }
-    else
-    {
-        busStops.Add(int.Parse(user.BusStops));
-    }
-
-    return busStops;
-}
