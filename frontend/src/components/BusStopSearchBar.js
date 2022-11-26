@@ -30,7 +30,7 @@ export default class BusStopSearchBar extends Component {
 		}
 
 		this.handleInputChange = this.handleInputChange.bind(this);
-		this.handleSelectStock = this.handleSelectStock.bind(this);
+		this.handleSelectBusSop = this.handleSelectBusSop.bind(this);
 	}
 
 	componentDidUpdate() {
@@ -41,7 +41,7 @@ export default class BusStopSearchBar extends Component {
 		}
 	}
 
-	handleSelectStock(userSelect) {
+	handleSelectBusSop(userSelect) {
 		this.props.onSelectBusStop(userSelect);
 	}
 
@@ -68,7 +68,7 @@ export default class BusStopSearchBar extends Component {
 						className='select_component'
 						value={{ value: this.props.busStopName, label: this.props.busStopName }}
 						options={this.state.displayedData}
-						onChange={this.handleSelectStock}
+						onChange={this.handleSelectBusSop}
 						onInputChange={this.handleInputChange}
 						placeholder={'Search...'}
 					/>

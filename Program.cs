@@ -86,8 +86,13 @@ app.MapGet("/listuserbusstops/{userId}", async (int userId, ZTMDb db) =>
     return System.Text.Json.JsonSerializer.Serialize(arrayWraps);
 });
 
-app.MapGet("/stopinfo/{stopId}", async (int stopId) => 
-    Results.Content(await fetchDataFromUri($"http://ckan2.multimediagdansk.pl/delays?stopId={stopId}")));
+app.MapGet("/stopinfo/{stopId}", async (int stopId) =>
+
+    await memoryCache!.GetOrCreateAsync($"stop_{stopId}", async entry =>
+    {
+        return Results.Content(await fetchDataFromUri($"http://ckan2.multimediagdansk.pl/delays?stopId={stopId}"));
+    })
+);
 
 app.MapGet("/busstops", async () =>
 
