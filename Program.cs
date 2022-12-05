@@ -4,13 +4,29 @@ using Newtonsoft.Json;
 using ZTMApp;
 using ZTMApp.Models;
 
+var  MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 var client = new HttpClient();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+        policy  =>
+        {
+            policy.WithOrigins("http://127.0.0.1", "http://localhost:8080")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
+
 builder.Services.AddDbContext<ZTMDb>(opt => opt.UseSqlite());
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 var memoryCache = app.Services.GetService<IMemoryCache>();
+app.UseCors(MyAllowSpecificOrigins);
+
 
 app.MapPost("/adduser", async (User user, ZTMDb db) =>
 {
@@ -63,27 +79,7 @@ app.MapGet("/listuserbusstops/{userId}", async (int userId, ZTMDb db) =>
 {
     var user = await db.Users.FirstAsync(u => u.Id == userId);
     var busStopsId = Repository.getBusStops(user);
-
-    var arrayWraps = new List<ArrayWrap>(); 
-
-    foreach (var stopId in busStopsId ?? new List<int>())
-    {
-        var jsonResponse = await fetchDataFromUri($"http://ckan2.multimediagdansk.pl/delays?stopId={stopId}");
-        var infoArray = JsonConvert.DeserializeObject<RootDelayArray>(jsonResponse ?? "")?.delay;
-
-        var arrayWrap = new ArrayWrap()
-        {
-            Delays = infoArray!,
-            StopId = stopId
-        };
-
-        if (infoArray != null)
-        {
-            arrayWraps.Add(arrayWrap);
-        }
-    }
-
-    return System.Text.Json.JsonSerializer.Serialize(arrayWraps);
+    return System.Text.Json.JsonSerializer.Serialize(new {stops = busStopsId});
 });
 
 app.MapGet("/stopinfo/{stopId}", async (int stopId) =>
@@ -111,7 +107,7 @@ app.MapPost("/addbusstop", async (int userId, int busStopId,  ZTMDb db) =>
 
         Repository.addBusStop(user, busStopId, db);
 
-        return Results.Ok();
+            return Results.Ok();
     }
     catch (Exception)
     {
